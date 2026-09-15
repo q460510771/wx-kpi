@@ -1,0 +1,5 @@
+pipeline/push.log
+pipeline/data.json
+pipeline/dashboard.html
+pipeline/outputs/
+.git-creds
