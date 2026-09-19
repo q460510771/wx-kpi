@@ -16,19 +16,9 @@ cd /d D:\wx-kpi
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd"') do set DTH=%%i
 "%GIT%" add index.html pipeline >> "%LOG%" 2>&1
 "%GIT%" commit -m "auto update %DTH% 18:00" >> "%LOG%" 2>&1
-set PUSHOK=0
-for /L %%n in (1,1,4) do (
-  "%GIT%" -c credential.helper= -c "credential.helper=store --file=C:/Users/guber/.wx-kpi-creds" push origin main >> "%LOG%" 2>&1
-  if not errorlevel 1 (
-    echo push attempt %%n OK >> "%LOG%"
-    set PUSHOK=1
-    goto :afterpush
-  ) else (
-    echo push attempt %%n failed, retrying >> "%LOG%"
-    timeout /t 30 /nobreak > nul
-  )
-)
-:afterpush
-echo push done PUSHOK=%PUSHOK% >> "%LOG%"
-if "%PUSHOK%"=="0" exit /b 1
-exit /b 0
+rem Delegate to push_retry.bat: long retry window (~27 min) + anti-reset http tuning,
+rem so a transient github outage at 18:00 no longer causes a hard daily failure.
+call D:\wx-kpi\push_retry.bat
+set PUSHRC=%errorlevel%
+if "%PUSHRC%"=="0" exit /b 0
+exit /b 1
