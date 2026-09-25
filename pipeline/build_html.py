@@ -122,7 +122,8 @@ td.msg{white-space:normal;max-width:420px;color:#c6cfdf}
 
 <script>
 const DATA = __DATA__;
-const COLORS = {"陈景斯":"#5470c6","郝天琪":"#91cc75","何昕怡":"#fac858","张康宁":"#ee6666","史敦兵":"#73c0de"};
+const PALETTE = ["#5470c6","#91cc75","#fac858","#ee6666","#73c0de","#9a60b4","#fc8452","#4f8cff","#3ecf8e","#f0566a"];
+const COLORS = {}; DATA.people.forEach((p,i)=>{ COLORS[p] = PALETTE[i % PALETTE.length]; });
 const PEOPLE = DATA.people;
 let sel = new Set(PEOPLE);
 let view = "month";
