@@ -3,4 +3,5 @@ pipeline/data.json
 pipeline/dashboard.html
 pipeline/outputs/
 pipeline/dingtalk_fetch_state.json
+pipeline/raw_*.json
 .git-creds
