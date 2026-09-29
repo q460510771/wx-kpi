@@ -81,6 +81,15 @@ td.msg{white-space:normal;max-width:420px;color:#c6cfdf}
 .note{margin-top:22px;color:var(--muted);font-size:12px;line-height:1.85;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 .hide{display:none}
 .empty{color:var(--muted);padding:20px;text-align:center;font-size:13px}
+.grp-badge{position:relative;cursor:pointer;color:var(--accent);border-bottom:1px dashed currentColor;padding:0 1px;white-space:nowrap}
+.src-block.dt .grp-badge{color:var(--dt-accent)}
+.grp-badge .grp-pop{display:none;position:absolute;left:0;top:150%;z-index:100;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 0;min-width:300px;max-width:400px;box-shadow:0 8px 24px rgba(0,0,0,.5);white-space:normal;text-align:left;font-weight:400}
+.grp-badge:hover .grp-pop,.grp-badge:focus .grp-pop,.grp-badge.open .grp-pop{display:block}
+.grp-pop .gp-title{display:block;font-size:11.5px;color:var(--muted);padding:3px 12px 7px;border-bottom:1px solid var(--line);margin-bottom:3px}
+.grp-pop .gi{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12.5px;padding:5px 12px}
+.grp-pop .gi:hover{background:rgba(255,255,255,.04)}
+.grp-pop .gn{color:#dfe6f2}
+.grp-pop .gc{color:var(--muted);font-size:11.5px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -183,6 +192,19 @@ ALL_PEOPLE.forEach((p,i)=>{ COLORS[p] = PALETTE[i % PALETTE.length]; });
 
 document.getElementById('gen').textContent = DATA.generated;
 
+// ---- group-count hover badge helpers ----
+function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function grpStats(SRC){
+  if(SRC.group_stats && SRC.group_stats.length) return SRC.group_stats;
+  return (SRC.groups||[]).map(g=>({name:g, msgs:null, issues:null}));
+}
+function grpBadge(SRC, text){
+  const gs = grpStats(SRC);
+  const items = gs.map(g=>`<div class="gi"><span class="gn">${escHtml(g.name)}</span>`+
+    (g.msgs!=null?`<span class="gc">${g.msgs} 条 · ${g.issues} 问题</span>`:'')+`</div>`).join('') || '<div class="gi">暂无</div>';
+  return `<span class="grp-badge" tabindex="0">${text}<span class="grp-pop"><span class="gp-title">覆盖 ${gs.length} 个群（按消息数排序）</span>${items}</span></span>`;
+}
+
 // Header summary
 (function renderSummary(){
   const wx = DATA.sources.wechat, dt = DATA.sources.dingtalk;
@@ -190,12 +212,19 @@ document.getElementById('gen').textContent = DATA.generated;
   const wxRange = (wx.days && wx.days.length) ? (wx.days[0]+' ~ '+wx.days[wx.days.length-1]) : '—';
   const dtRange = (dt.days && dt.days.length) ? (dt.days[0]+' ~ '+dt.days[dt.days.length-1]) : '—';
   document.getElementById('summary').innerHTML = [
-    box('微信 · 消息', wx.total_msgs||0, wxRange+'　·　'+(wx.groups||[]).length+' 个群'),
+    box('微信 · 消息', wx.total_msgs||0, wxRange+'　·　'+grpBadge(wx, (wx.groups||[]).length+' 个群 ▾')),
     box('微信 · 识别问题', wx.total_issues||0, '响应窗 '+wx.resp_window_h+'h　·　解决窗 '+wx.resolve_window_h+'h'),
-    box('钉钉 · 消息', dt.total_msgs||0, dtRange+'　·　'+(dt.groups||[]).length+' 个群'),
+    box('钉钉 · 消息', dt.total_msgs||0, dtRange+'　·　'+grpBadge(dt, (dt.groups||[]).length+' 个群 ▾')),
     box('钉钉 · 识别问题', dt.total_issues||0, '响应窗 '+dt.resp_window_h+'h　·　解决窗 '+dt.resolve_window_h+'h'),
   ].join('');
 })();
+
+// click-to-pin the group popover (hover works via CSS); click outside closes
+document.addEventListener('click', function(e){
+  const badge = e.target.closest ? e.target.closest('.grp-badge') : null;
+  document.querySelectorAll('.grp-badge.open').forEach(b=>{ if(b!==badge) b.classList.remove('open'); });
+  if(badge){ badge.classList.toggle('open'); }
+});
 
 const charts = {};
 function mk(id){
@@ -249,8 +278,8 @@ function mountSection(prefix, SRC){
 
   function renderRange(){
     const days = SRC.days||[];
-    $('range').textContent = days.length
-      ? ('数据区间 '+days[0]+' ~ '+days[days.length-1]+'　·　消息 '+SRC.total_msgs+' 条　·　识别问题/请求 '+SRC.total_issues+' 个　·　覆盖群 '+(SRC.groups||[]).length+' 个')
+    $('range').innerHTML = days.length
+      ? ('数据区间 '+days[0]+' ~ '+days[days.length-1]+'　·　消息 '+SRC.total_msgs+' 条　·　识别问题/请求 '+SRC.total_issues+' 个　·　'+grpBadge(SRC, '覆盖群 '+(SRC.groups||[]).length+' 个 ▾'))
       : '暂无数据';
   }
 

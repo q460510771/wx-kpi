@@ -320,8 +320,15 @@ def aggregate(msgs, issues, track, ontime_min):
             "ontime": v["ontime"],
         }
     groups = sorted({m["group"] for m in msgs if m.get("group")})
+    group_msgs = collections.Counter(m["group"] for m in msgs if m.get("group"))
+    group_issues = collections.Counter(i["group"] for i in issues if i.get("group"))
+    group_stats = [
+        {"name": g, "msgs": group_msgs.get(g, 0), "issues": group_issues.get(g, 0)}
+        for g in groups
+    ]
+    group_stats.sort(key=lambda x: -x["msgs"])
     return {"days": days, "people": people, "per_pd": pd_out, "issues": issues,
-            "track": track, "groups": groups}
+            "track": track, "groups": groups, "group_stats": group_stats}
 
 
 def summarize(tag, msgs, issues, agg):
