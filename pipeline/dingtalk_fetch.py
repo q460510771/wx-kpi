@@ -168,14 +168,19 @@ def main():
           % (d0, d1, len(cfg["groups"]), len(seen)))
 
     total_new = 0
+    fatal_errors = []
     per_group = []
     for g in cfg["groups"]:
         name, cid = g["name"], g["cid"]
         try:
             raw = fetch_group(dws_exe, cid, start_iso, end_iso)
         except Exception as e:
+            # A dws failure (e.g. headless run without a QwenWork session) is a
+            # HARD failure: propagate a non-zero exit so callers do not publish
+            # stale data. Zero new messages on a successful call is NOT a failure.
             print("  [%s] FETCH FAILED: %s" % (name, e))
             per_group.append({"group": name, "raw": 0, "new": 0, "error": str(e)[:200]})
+            fatal_errors.append("%s: %s" % (name, str(e)[:120]))
             continue
         fresh = []
         for m in raw:
@@ -200,6 +205,10 @@ def main():
     save_state(state)
     print("dingtalk_fetch: appended %d new msgs, store total %d"
           % (total_new, len(seen)))
+    if fatal_errors:
+        print("dingtalk_fetch: FAILED %d/%d group(s): %s"
+              % (len(fatal_errors), len(cfg["groups"]), " | ".join(fatal_errors)))
+        return 1
     return 0
 
 

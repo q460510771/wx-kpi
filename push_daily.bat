@@ -12,9 +12,18 @@ set GIT_TERMINAL_PROMPT=0
 set LOG=D:\wx-kpi\pipeline\push.log
 echo ==== %date% %time% ==== >> "%LOG%"
 cd /d D:\wx-kpi\pipeline
-rem --- Step 1: fetch today's DingTalk group messages via dws shim ---
-"%PY%" dingtalk_fetch.py >> "%LOG%" 2>&1
-echo dingtalk fetch exit=%errorlevel% >> "%LOG%"
+rem --- Step 1: GATE on today's DingTalk fetch ---
+rem dws cannot run headless: auth is host-managed and the shim requires a live
+rem QwenWork session (QODERWORK_SOURCE_CHAT_ID). The daily fetch was therefore
+rem moved to a QwenWork cron (17:50) that calls dws directly and writes a success
+rem marker via pipeline/merge_today.py. Here we only VERIFY that marker; if today's
+rem fetch did not succeed we SKIP publishing entirely (no build/commit/push).
+"%PY%" check_fetch_marker.py >> "%LOG%" 2>&1
+if errorlevel 1 (
+  echo push done PUSHOK=SKIP reason=dingtalk_fetch_not_ok >> "%LOG%"
+  exit /b 1
+)
+echo dingtalk fetch marker OK >> "%LOG%"
 rem --- Step 2: rebuild combined data.json (WeChat + DingTalk) ---
 "%PY%" build_data.py D:\wx-kpi\pipeline >> "%LOG%" 2>&1
 rem --- Step 3: regenerate index.html ---

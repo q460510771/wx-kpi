@@ -4,5 +4,6 @@ pipeline/dashboard.html
 pipeline/outputs/
 pipeline/dingtalk_fetch_state.json
 pipeline/raw_*.json
+pipeline/raw_today/
 pipeline/bg_push.log
 .git-creds
