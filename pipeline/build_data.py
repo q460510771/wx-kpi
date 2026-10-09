@@ -146,7 +146,11 @@ def load_wechat():
                         arr = json.load(f)
                 except Exception:
                     continue
+                if not isinstance(arr, list):
+                    continue
                 for m in arr:
+                    if not isinstance(m, dict):
+                        continue
                     if m.get("attr") == "system" or m.get("type") == "time":
                         continue
                     sender = m.get("sender")
